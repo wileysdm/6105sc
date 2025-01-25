@@ -1,0 +1,74 @@
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+
+const PaperSearch = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [results, setResults] = useState([]);
+
+  const handleSearch = async () => {
+    if (!searchTerm) return;
+
+    // Replace with your API endpoint or database query
+    const response = await fetch(`/api/search?query=${encodeURIComponent(searchTerm)}`);
+    const data = await response.json();
+
+    setResults(data.results || []);
+  };
+
+  return (
+    <div className="h-screen bg-gradient-to-br from-gray-900 to-blue-900 flex flex-col items-center justify-center text-white">
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-3xl"
+      >
+        <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500 rounded-2xl shadow-xl">
+          <CardContent className="p-6">
+            <h1 className="text-2xl font-bold text-center mb-6">论文搜索</h1>
+
+            <div className="flex space-x-4">
+              <Input
+                type="text"
+                placeholder="输入论文标题、作者或关键字"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-grow bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500"
+              />
+              <Button
+                onClick={handleSearch}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+              >
+                搜索
+              </Button>
+            </div>
+
+            <div className="mt-6">
+              {results.length === 0 ? (
+                <p className="text-gray-400 text-center">没有找到相关论文，请尝试其他关键字。</p>
+              ) : (
+                <ul className="space-y-4">
+                  {results.map((paper, index) => (
+                    <li
+                      key={index}
+                      className="bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition-all"
+                    >
+                      <h2 className="text-xl font-semibold text-blue-400">{paper.title}</h2>
+                      <p className="text-gray-300">作者: {paper.author}</p>
+                      <p className="text-gray-400">关键字: {paper.keywords.join(", ")}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+};
+
+export default PaperSearch;
