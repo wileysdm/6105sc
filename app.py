@@ -6,7 +6,7 @@ app = Flask(__name__)
 CORS(app)  # 允许跨域请求
 
 # 数据库路径
-DATABASE = 'your-database-name.db'
+DATABASE = 'database.db'
 
 def query_database(query, args=(), one=False):
     """执行 SQLite 查询"""
