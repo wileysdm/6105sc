@@ -1,72 +1,72 @@
 import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+const sqlite3 = window.require("sqlite3").verbose();
 
 const PaperSearch = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
 
-  const handleSearch = async () => {
+  // 打开 SQLite3 数据库
+  const db = new sqlite3.Database("./your-database-name.db");
+
+  const handleSearch = () => {
     if (!searchTerm) return;
 
-    // Replace with your API endpoint or database query
-    const response = await fetch(`/api/search?query=${encodeURIComponent(searchTerm)}`);
-    const data = await response.json();
+    // 构建查询语句
+    const query = `
+      SELECT p.title, p.abstract, p.DID, p.timestamp, p.keywords, a.nickname AS author_name
+      FROM paper p
+      INNER JOIN author au ON p.DID = au.DID
+      INNER JOIN account a ON au.author_id = a.account_id
+      WHERE p.title LIKE ? OR a.nickname LIKE ? OR p.abstract LIKE ? OR p.keywords LIKE ?;
+    `;
 
-    setResults(data.results || []);
+    // 执行查询
+    db.all(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`], (err, rows) => {
+      if (err) {
+        console.error("Error querying the database:", err);
+        return;
+      }
+      setResults(rows || []);
+    });
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 to-blue-900 flex flex-col items-center justify-center text-white">
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-3xl"
-      >
-        <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500 rounded-2xl shadow-xl">
-          <CardContent className="p-6">
-            <h1 className="text-2xl font-bold text-center mb-6">论文搜索</h1>
-
-            <div className="flex space-x-4">
-              <Input
-                type="text"
-                placeholder="输入论文标题、作者或关键字"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-grow bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500"
-              />
-              <Button
-                onClick={handleSearch}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-              >
-                搜索
-              </Button>
-            </div>
-
-            <div className="mt-6">
-              {results.length === 0 ? (
-                <p className="text-gray-400 text-center">没有找到相关论文，请尝试其他关键字。</p>
-              ) : (
-                <ul className="space-y-4">
-                  {results.map((paper, index) => (
-                    <li
-                      key={index}
-                      className="bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition-all"
-                    >
-                      <h2 className="text-xl font-semibold text-blue-400">{paper.title}</h2>
-                      <p className="text-gray-300">作者: {paper.author}</p>
-                      <p className="text-gray-400">关键字: {paper.keywords.join(", ")}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+    <div className="h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
+      <div className="w-full max-w-3xl p-6 bg-gray-800 rounded-lg shadow-lg">
+        <h1 className="text-2xl font-bold text-center mb-6">论文搜索</h1>
+        <div className="flex space-x-4 mb-6">
+          <input
+            type="text"
+            placeholder="输入论文标题、作者、关键字或摘要"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow px-4 py-2 bg-gray-700 rounded-lg text-white placeholder-gray-400"
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
+          >
+            搜索
+          </button>
+        </div>
+        <div>
+          {results.length === 0 ? (
+            <p className="text-gray-400 text-center">没有找到相关论文</p>
+          ) : (
+            <ul>
+              {results.map((paper, index) => (
+                <li key={index} className="mb-4 p-4 bg-gray-700 rounded-lg">
+                  <h2 className="text-xl font-bold">{paper.title}</h2>
+                  <p className="text-gray-400">作者: {paper.author_name}</p>
+                  <p className="text-gray-300">摘要: {paper.abstract}</p>
+                  <p className="text-gray-300">关键字: {paper.keywords}</p>
+                  <p className="text-gray-500 text-sm">时间: {paper.timestamp}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
